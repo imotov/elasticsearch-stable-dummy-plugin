@@ -1,0 +1,95 @@
+//buildscript.ext.pluginApiVersion = ext.pluginApiVersion
+
+buildscript {
+  repositories {
+    maven {
+      url = 'https://snapshots.elastic.co/maven/'
+    }
+    mavenCentral()
+  }
+  dependencies {
+    classpath "org.elasticsearch.gradle:build-tools:${pluginApiVersion}"
+    classpath "com.diffplug.spotless:spotless-plugin-gradle:${spotlessVersion}"
+  }
+}
+
+apply plugin: 'java'
+apply plugin: 'elasticsearch.stable-esplugin'
+apply plugin: 'elasticsearch.yaml-rest-test'
+apply plugin: 'checkstyle'
+apply plugin: "com.diffplug.spotless"
+
+esplugin {
+  name 'stable-dummy-plugin'
+  description 'Example analysis plugin'
+}
+
+spotless {
+  java {
+    target("src/**/*.java")
+    removeUnusedImports()
+
+    // We enforce a standard order for imports
+    importOrderFile("config/formatter/elastic.importorder")
+
+    // Most formatting is done through the Eclipse formatter
+    eclipse().configFile("config/formatter/formatterConfig.xml")
+
+    trimTrailingWhitespace()
+  }
+}
+
+if (release.toBoolean()) {
+  version="${pluginApiVersion}.${revision}"
+} else {
+  if (pluginApiVersion.endsWith('-SNAPSHOT')) {
+    version="${pluginApiVersion.substring(0, pluginApiVersion.length() - '-SNAPSHOT'.length())}.${revision}-SNAPSHOT"
+  } else {
+    version="${pluginApiVersion}.${revision}-SNAPSHOT"
+  }
+}
+
+group="org.motovs.stabledummy"
+
+repositories {
+  // Only necessary when building plugins against SNAPSHOT versions of Elasticsearch
+  maven {
+    url = 'https://snapshots.elastic.co/maven/'
+  }
+  if (pluginApiVersion.contains('-SNAPSHOT')) {
+    maven {
+      url = "https://artifacts-snapshot.elastic.co/elasticsearch/${pluginApiVersion}/maven"
+      mavenContent {
+        includeModule 'org.elasticsearch', 'elasticsearch'
+      }
+    }
+  }
+
+  if (luceneVersion.contains('-snapshot')) {
+    maven {
+      url = "https://s3.amazonaws.com/download.elasticsearch.org/lucenesnapshots/${matcher.group(1)}"
+    }
+  }
+
+  mavenCentral()
+}
+
+dependencies {
+  compileOnly "org.elasticsearch:elasticsearch:${pluginApiVersion}"
+  compileOnly "org.elasticsearch.plugin:elasticsearch-plugin-api:${pluginApiVersion}"
+  compileOnly "org.elasticsearch.plugin:elasticsearch-plugin-analysis-api:${pluginApiVersion}"
+  compileOnly "org.apache.lucene:lucene-analysis-common:${luceneVersion}"
+
+  testImplementation "org.elasticsearch:elasticsearch:${pluginApiVersion}"
+  testImplementation "org.elasticsearch.test:framework:${pluginApiVersion}"
+  testImplementation "org.elasticsearch.plugin:elasticsearch-plugin-api:${pluginApiVersion}"
+  testImplementation "org.elasticsearch.plugin:elasticsearch-plugin-analysis-api:${pluginApiVersion}"
+  testImplementation "org.apache.lucene:lucene-analysis-common:${luceneVersion}"
+
+  testImplementation ("junit:junit:${junitVersion}"){
+    exclude group: 'org.hamcrest'
+  }
+  testImplementation "org.mockito:mockito-core:${mockitoVersion}"
+  testImplementation "org.hamcrest:hamcrest:${hamcrestVersion}"
+}
+

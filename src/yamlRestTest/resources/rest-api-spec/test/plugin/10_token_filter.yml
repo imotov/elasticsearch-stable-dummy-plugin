@@ -1,0 +1,14 @@
+## Sample rest test
+---
+"Stable Dummy plugin test - removes all tokens that don't have specified size":
+  - do:
+      indices.analyze:
+        body:
+          text:  Isn’t it enough to see that a garden is beautiful without having to believe that there are fairies at the bottom of it too?
+          tokenizer: standard
+          filter:
+            - type: "stabledummy"
+              size: 5
+  - length: { tokens: 2 }
+  - match:  { tokens.0.token: "Isn’t" }
+  - match:  { tokens.1.token: "there" }
