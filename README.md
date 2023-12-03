@@ -1,4 +1,4 @@
-A example project for building a stable plugin for elasticsearch
+An example project for building a stable plugin for elasticsearch
 =============================
 
 ## Building the plugin:
